@@ -30,7 +30,6 @@ class SerialPortReader {
   
   setListener(listener) {
     this.listener = listener;
-    if (this.parser) this.parser.on('data', d => listener.next(d));
   }
 }
 
