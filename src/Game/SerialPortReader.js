@@ -1,36 +1,34 @@
 const SerialPort = require('serialport');
 const DelimiterParser = require('@serialport/parser-delimiter');
 
-// Creates a serial port connection automatically with
-class SerialPortReader {
-  constructor() {
-    this.port = undefined;
-    this.parser = undefined;
-    this.listener = undefined;
-  }
+let port = undefined;
+let parser = undefined;
+const listeners = [];
 
-  openPort(testFunction, delimiter) {
-    if (!this.port && !this.parser) {
-      SerialPort.list()
-      // find the good port
-      .then(ports => ports.find(testFunction))
-      .then(portInfo => {
-        this.port = new SerialPort(portInfo.comName);
-        this.parser = this.port.pipe(new DelimiterParser({ delimiter: delimiter }));
+function openPort(testFunction, delimiter) {
+  if (!port && !parser) {
+    SerialPort.list()
+    // find the good port
+    .then(ports => ports.find(testFunction))
+    .then(portInfo => {
+      port = new SerialPort(portInfo.comName);
+      parser = port.pipe(new DelimiterParser({ delimiter: delimiter }));
 
-        // Connect listener to port
-        this.parser.on('data', d => {
-          if (this.listener) this.listener(d.toString());
-        });
+      // Connect listener to port
+      parser.on('data', d => {
+        if (listeners.length > 0) listeners.forEach(l => l(d.toString()));
       });
-    } else {
-      throw new Error('Serial Port Reader Instance Already Connected!');
-    }
-  }
-  
-  setListener(listener) {
-    this.listener = listener;
+    });
+  } else {
+    throw new Error('Serial Port Reader Instance Already Connected!');
   }
 }
 
-module.exports = SerialPortReader;
+function addListener(listener) {
+  listeners.push(listener);
+}
+
+module.exports = {
+  openPort: openPort,
+  addListener: addListener,
+};
